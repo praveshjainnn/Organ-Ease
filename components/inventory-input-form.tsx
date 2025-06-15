@@ -608,13 +608,15 @@ export function InventoryInputForm() {
           <div className="grid md:grid-cols-3 lg:grid-cols-6 gap-4">
             <Select
               value={searchFilters.organType || "all"}
-              onValueChange={(value) => setSearchFilters((prev) => ({ ...prev, organType: value }))}
+              onValueChange={(value) =>
+                setSearchFilters((prev) => ({ ...prev, organType: value === "all" ? "" : value }))
+              }
             >
               <SelectTrigger>
                 <SelectValue placeholder="Organ Type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Organs</SelectItem>
+                <SelectItem value="all">All Organs</SelectItem>
                 <SelectItem value="kidney">Kidney</SelectItem>
                 <SelectItem value="liver">Liver</SelectItem>
                 <SelectItem value="heart">Heart</SelectItem>
@@ -628,13 +630,15 @@ export function InventoryInputForm() {
 
             <Select
               value={searchFilters.bloodGroup || "all"}
-              onValueChange={(value) => setSearchFilters((prev) => ({ ...prev, bloodGroup: value }))}
+              onValueChange={(value) =>
+                setSearchFilters((prev) => ({ ...prev, bloodGroup: value === "all" ? "" : value }))
+              }
             >
               <SelectTrigger>
                 <SelectValue placeholder="Blood Group" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Blood Groups</SelectItem>
+                <SelectItem value="all">All Blood Groups</SelectItem>
                 <SelectItem value="A+">A+</SelectItem>
                 <SelectItem value="A-">A-</SelectItem>
                 <SelectItem value="B+">B+</SelectItem>
@@ -648,13 +652,13 @@ export function InventoryInputForm() {
 
             <Select
               value={searchFilters.status || "all"}
-              onValueChange={(value) => setSearchFilters((prev) => ({ ...prev, status: value }))}
+              onValueChange={(value) => setSearchFilters((prev) => ({ ...prev, status: value === "all" ? "" : value }))}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Status</SelectItem>
+                <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="available">Available</SelectItem>
                 <SelectItem value="reserved">Reserved</SelectItem>
                 <SelectItem value="transported">Transported</SelectItem>
@@ -664,13 +668,15 @@ export function InventoryInputForm() {
 
             <Select
               value={searchFilters.priority || "all"}
-              onValueChange={(value) => setSearchFilters((prev) => ({ ...prev, priority: value }))}
+              onValueChange={(value) =>
+                setSearchFilters((prev) => ({ ...prev, priority: value === "all" ? "" : value }))
+              }
             >
               <SelectTrigger>
                 <SelectValue placeholder="Priority" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Priorities</SelectItem>
+                <SelectItem value="all">All Priorities</SelectItem>
                 <SelectItem value="normal">Normal</SelectItem>
                 <SelectItem value="high">High</SelectItem>
                 <SelectItem value="critical">Critical</SelectItem>
