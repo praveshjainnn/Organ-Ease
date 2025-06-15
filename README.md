@@ -1,6 +1,6 @@
 # Proud to Present: OrganEase - AI-Powered Organ Donation Management Platform
 
-Deployed app :  http://v0-organ-ease.vercel.app
+Deployed app :  http://v0-organ-ease-development-git-or-50a24f-praveshjainnns-projects.vercel.app
 
 I'm excited to share **OrganEase**, a comprehensive web application I developed to revolutionize organ donation management through cutting-edge technology. 💙
 
