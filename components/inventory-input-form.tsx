@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
-import { Plus, Package, Calendar, MapPin, Thermometer, Clock, Trash2, Edit } from "lucide-react"
+import { Plus, Package, Calendar, MapPin, Thermometer, Clock, Trash2, Edit, Search } from "lucide-react"
 
 interface InventoryItem {
   id: string
@@ -51,6 +51,18 @@ export function InventoryInputForm() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [filter, setFilter] = useState("all")
   const { toast } = useToast()
+
+  const [searchQuery, setSearchQuery] = useState("")
+  const [searchFilters, setSearchFilters] = useState({
+    organType: "",
+    bloodGroup: "",
+    status: "",
+    priority: "",
+    location: "",
+    donorName: "",
+  })
+  const [sortBy, setSortBy] = useState("createdAt")
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
 
   // Load inventory on component mount
   useEffect(() => {
@@ -196,10 +208,103 @@ export function InventoryInputForm() {
     }
   }
 
-  const filteredInventory = inventory.filter((item) => {
-    if (filter === "all") return true
-    return item.status === filter
-  })
+  const clearSearch = () => {
+    setSearchQuery("")
+    setSearchFilters({
+      organType: "",
+      bloodGroup: "",
+      status: "",
+      priority: "",
+      location: "",
+      donorName: "",
+    })
+  }
+
+  const exportFilteredData = () => {
+    const csvContent = [
+      [
+        "Organ Type",
+        "Blood Group",
+        "Donor Name",
+        "Donor ID",
+        "Location",
+        "Status",
+        "Priority",
+        "Harvest Date",
+        "Expiry Date",
+        "Temperature",
+        "Notes",
+      ],
+      ...filteredInventory.map((item) => [
+        item.organType,
+        item.bloodGroup,
+        item.donorName,
+        item.donorId,
+        item.location,
+        item.status,
+        item.priority,
+        new Date(item.harvestDate).toLocaleDateString(),
+        new Date(item.expiryDate).toLocaleDateString(),
+        item.temperature + "°C",
+        item.notes,
+      ]),
+    ]
+      .map((row) => row.join(","))
+      .join("\n")
+
+    const blob = new Blob([csvContent], { type: "text/csv" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = `inventory-filtered-${new Date().toISOString().split("T")[0]}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+
+    toast({
+      title: "Export completed",
+      description: `Exported ${filteredInventory.length} items to CSV`,
+    })
+  }
+
+  const filteredInventory = inventory
+    .filter((item) => {
+      // Text search across multiple fields
+      const searchLower = searchQuery.toLowerCase()
+      const matchesSearch =
+        searchQuery === "" ||
+        item.organType.toLowerCase().includes(searchLower) ||
+        item.donorName.toLowerCase().includes(searchLower) ||
+        item.donorId.toLowerCase().includes(searchLower) ||
+        item.location.toLowerCase().includes(searchLower) ||
+        item.notes.toLowerCase().includes(searchLower)
+
+      // Filter by specific criteria
+      const matchesFilters =
+        (searchFilters.organType === "" || item.organType === searchFilters.organType) &&
+        (searchFilters.bloodGroup === "" || item.bloodGroup === searchFilters.bloodGroup) &&
+        (searchFilters.status === "" || item.status === searchFilters.status) &&
+        (searchFilters.priority === "" || item.priority === searchFilters.priority) &&
+        (searchFilters.location === "" || item.location.toLowerCase().includes(searchFilters.location.toLowerCase())) &&
+        (searchFilters.donorName === "" || item.donorName.toLowerCase().includes(searchFilters.donorName.toLowerCase()))
+
+      return matchesSearch && matchesFilters
+    })
+    .sort((a, b) => {
+      let aValue = a[sortBy as keyof InventoryItem]
+      let bValue = b[sortBy as keyof InventoryItem]
+
+      // Handle date sorting
+      if (sortBy === "createdAt" || sortBy === "harvestDate" || sortBy === "expiryDate") {
+        aValue = new Date(aValue as string).getTime()
+        bValue = new Date(bValue as string).getTime()
+      }
+
+      if (sortOrder === "asc") {
+        return aValue < bValue ? -1 : aValue > bValue ? 1 : 0
+      } else {
+        return aValue > bValue ? -1 : aValue < bValue ? 1 : 0
+      }
+    })
 
   const stats = {
     total: inventory.length,
@@ -467,6 +572,194 @@ export function InventoryInputForm() {
               )}
             </div>
           </form>
+        </CardContent>
+      </Card>
+
+      {/* Advanced Search and Filters */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Search className="h-5 w-5" />
+            Search & Filter Inventory
+          </CardTitle>
+          <CardDescription>Search and filter inventory items using multiple criteria</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Main Search Bar */}
+          <div className="flex gap-2">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Search by organ type, donor name, ID, location, or notes..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <Button variant="outline" onClick={clearSearch}>
+              Clear All
+            </Button>
+            <Button variant="outline" onClick={exportFilteredData}>
+              Export Results
+            </Button>
+          </div>
+
+          {/* Advanced Filters */}
+          <div className="grid md:grid-cols-3 lg:grid-cols-6 gap-4">
+            <Select
+              value={searchFilters.organType || "all"}
+              onValueChange={(value) => setSearchFilters((prev) => ({ ...prev, organType: value }))}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Organ Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">All Organs</SelectItem>
+                <SelectItem value="kidney">Kidney</SelectItem>
+                <SelectItem value="liver">Liver</SelectItem>
+                <SelectItem value="heart">Heart</SelectItem>
+                <SelectItem value="lungs">Lungs</SelectItem>
+                <SelectItem value="pancreas">Pancreas</SelectItem>
+                <SelectItem value="cornea">Cornea</SelectItem>
+                <SelectItem value="bone">Bone</SelectItem>
+                <SelectItem value="skin">Skin</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={searchFilters.bloodGroup || "all"}
+              onValueChange={(value) => setSearchFilters((prev) => ({ ...prev, bloodGroup: value }))}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Blood Group" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">All Blood Groups</SelectItem>
+                <SelectItem value="A+">A+</SelectItem>
+                <SelectItem value="A-">A-</SelectItem>
+                <SelectItem value="B+">B+</SelectItem>
+                <SelectItem value="B-">B-</SelectItem>
+                <SelectItem value="AB+">AB+</SelectItem>
+                <SelectItem value="AB-">AB-</SelectItem>
+                <SelectItem value="O+">O+</SelectItem>
+                <SelectItem value="O-">O-</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={searchFilters.status || "all"}
+              onValueChange={(value) => setSearchFilters((prev) => ({ ...prev, status: value }))}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">All Status</SelectItem>
+                <SelectItem value="available">Available</SelectItem>
+                <SelectItem value="reserved">Reserved</SelectItem>
+                <SelectItem value="transported">Transported</SelectItem>
+                <SelectItem value="expired">Expired</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={searchFilters.priority || "all"}
+              onValueChange={(value) => setSearchFilters((prev) => ({ ...prev, priority: value }))}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Priority" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">All Priorities</SelectItem>
+                <SelectItem value="normal">Normal</SelectItem>
+                <SelectItem value="high">High</SelectItem>
+                <SelectItem value="critical">Critical</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger>
+                <SelectValue placeholder="Sort By" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="createdAt">Date Added</SelectItem>
+                <SelectItem value="harvestDate">Harvest Date</SelectItem>
+                <SelectItem value="expiryDate">Expiry Date</SelectItem>
+                <SelectItem value="organType">Organ Type</SelectItem>
+                <SelectItem value="donorName">Donor Name</SelectItem>
+                <SelectItem value="priority">Priority</SelectItem>
+                <SelectItem value="status">Status</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={sortOrder} onValueChange={(value: "asc" | "desc") => setSortOrder(value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Order" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="desc">Newest First</SelectItem>
+                <SelectItem value="asc">Oldest First</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Quick Filter Buttons */}
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant={searchFilters.status === "available" ? "default" : "outline"}
+              size="sm"
+              onClick={() =>
+                setSearchFilters((prev) => ({
+                  ...prev,
+                  status: prev.status === "available" ? "" : "available",
+                }))
+              }
+            >
+              Available Only
+            </Button>
+            <Button
+              variant={searchFilters.priority === "critical" ? "default" : "outline"}
+              size="sm"
+              onClick={() =>
+                setSearchFilters((prev) => ({
+                  ...prev,
+                  priority: prev.priority === "critical" ? "" : "critical",
+                }))
+              }
+            >
+              Critical Priority
+            </Button>
+            <Button
+              variant={searchFilters.organType === "kidney" ? "default" : "outline"}
+              size="sm"
+              onClick={() =>
+                setSearchFilters((prev) => ({
+                  ...prev,
+                  organType: prev.organType === "kidney" ? "" : "kidney",
+                }))
+              }
+            >
+              Kidneys Only
+            </Button>
+            <Button
+              variant={searchFilters.organType === "heart" ? "default" : "outline"}
+              size="sm"
+              onClick={() =>
+                setSearchFilters((prev) => ({
+                  ...prev,
+                  organType: prev.organType === "heart" ? "" : "heart",
+                }))
+              }
+            >
+              Hearts Only
+            </Button>
+          </div>
+
+          {/* Search Results Summary */}
+          <div className="text-sm text-gray-600">
+            Showing {filteredInventory.length} of {inventory.length} items
+            {searchQuery && ` matching "${searchQuery}"`}
+          </div>
         </CardContent>
       </Card>
 
