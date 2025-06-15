@@ -218,7 +218,7 @@ export class MLPredictionService {
       name: "Transport Delay Predictor",
       type: "delay",
       accuracy: 0.87,
-      lastTrained: Date.now() - 86400000 * 7, // 7 days ago
+      lastTrained: new Date(2025, 0, 20).getTime(),
       features: ["distance", "weather", "traffic", "timeOfDay", "vehicleType", "priority"],
       version: "2.1.0",
     })
@@ -227,7 +227,7 @@ export class MLPredictionService {
       name: "Mission Success Predictor",
       type: "success",
       accuracy: 0.92,
-      lastTrained: Date.now() - 86400000 * 5,
+      lastTrained: new Date(2025, 0, 22).getTime(),
       features: ["organType", "priority", "distance", "weather", "driverExperience"],
       version: "1.8.0",
     })
@@ -236,7 +236,7 @@ export class MLPredictionService {
       name: "Transport Risk Assessor",
       type: "risk",
       accuracy: 0.84,
-      lastTrained: Date.now() - 86400000 * 3,
+      lastTrained: new Date(2025, 0, 24).getTime(),
       features: ["weather", "traffic", "vehicleAge", "maintenanceStatus", "timeOfDay"],
       version: "1.5.0",
     })
@@ -245,7 +245,7 @@ export class MLPredictionService {
       name: "Route Optimization Engine",
       type: "optimization",
       accuracy: 0.89,
-      lastTrained: Date.now() - 86400000 * 2,
+      lastTrained: new Date(2025, 0, 25).getTime(),
       features: ["distance", "traffic", "weather", "priority", "timeConstraints"],
       version: "3.0.0",
     })
