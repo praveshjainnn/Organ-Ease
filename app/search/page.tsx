@@ -33,128 +33,89 @@ export default function SearchPage() {
   const [selectedHospital, setSelectedHospital] = useState<HospitalMatch | null>(null)
   const [showTransportLogistics, setShowTransportLogistics] = useState(false)
 
-  // Enhanced mock data with coordinates
-  const donors = [
-    {
-      id: "1",
-      donorId: "D001",
-      organ: "Kidney",
-      bloodGroup: "O+",
-      location: "New York",
-      coordinates: { latitude: 40.7128, longitude: -74.006 },
-      availability: "Immediate",
-      compatibility: "95%",
-      distance: 0,
-      age: 28,
-      medicalStatus: "Excellent",
-    },
-    {
-      id: "2",
-      donorId: "D002",
-      organ: "Liver",
-      bloodGroup: "A+",
-      location: "Los Angeles",
-      coordinates: { latitude: 34.0522, longitude: -118.2437 },
-      availability: "Within 1 Month",
-      compatibility: "88%",
-      distance: 0,
-      age: 35,
-      medicalStatus: "Good",
-    },
-    {
-      id: "3",
-      donorId: "D003",
-      organ: "Kidney",
-      bloodGroup: "B+",
-      location: "Chicago",
-      coordinates: { latitude: 41.8781, longitude: -87.6298 },
-      availability: "Within 3 Months",
-      compatibility: "92%",
-      distance: 0,
-      age: 31,
-      medicalStatus: "Excellent",
-    },
-    {
-      id: "4",
-      donorId: "D004",
-      organ: "Heart",
-      bloodGroup: "AB+",
-      location: "Houston",
-      coordinates: { latitude: 29.7604, longitude: -95.3698 },
-      availability: "Immediate",
-      compatibility: "85%",
-      distance: 0,
-      age: 29,
-      medicalStatus: "Good",
-    },
-    {
-      id: "5",
-      donorId: "D005",
-      organ: "Kidney",
-      bloodGroup: "O-",
-      location: "Phoenix",
-      coordinates: { latitude: 33.4484, longitude: -112.074 },
-      availability: "Within 1 Month",
-      compatibility: "90%",
-      distance: 0,
-      age: 33,
-      medicalStatus: "Excellent",
-    },
-    {
-      id: "6",
-      donorId: "D006",
-      organ: "Liver",
-      bloodGroup: "A-",
-      location: "Philadelphia",
-      coordinates: { latitude: 39.9526, longitude: -75.1652 },
-      availability: "Immediate",
-      compatibility: "87%",
-      distance: 0,
-      age: 27,
-      medicalStatus: "Good",
-    },
-    {
-      id: "7",
-      donorId: "D007",
-      organ: "Heart",
-      bloodGroup: "B-",
-      location: "San Antonio",
-      coordinates: { latitude: 29.4241, longitude: -98.4936 },
-      availability: "Within 3 Months",
-      compatibility: "91%",
-      distance: 0,
-      age: 30,
-      medicalStatus: "Excellent",
-    },
-    {
-      id: "8",
-      donorId: "D008",
-      organ: "Kidney",
-      bloodGroup: "AB-",
-      location: "San Diego",
-      coordinates: { latitude: 32.7157, longitude: -117.1611 },
-      availability: "Within 1 Month",
-      compatibility: "89%",
-      distance: 0,
-      age: 26,
-      medicalStatus: "Good",
-    },
-  ]
+  // Remove the existing donors array and replace with:
+  const [inventory, setInventory] = useState<any[]>([])
 
-  const [filteredDonors, setFilteredDonors] = useState(donors)
+  // Add useEffect to load inventory data
+  useEffect(() => {
+    const loadInventory = () => {
+      const storedInventory = JSON.parse(localStorage.getItem("organease_inventory") || "[]")
+      // Transform inventory items to match donor format
+      const transformedDonors = storedInventory
+        .filter((item: any) => item.status === "available") // Only show available organs
+        .map((item: any) => ({
+          id: item.id,
+          donorId: item.donorId,
+          organ: item.organType.charAt(0).toUpperCase() + item.organType.slice(1),
+          bloodGroup: item.bloodGroup,
+          location: item.location.split(" - ")[0] || item.location, // Extract main location
+          coordinates: extractCoordinates(item.location),
+          availability: getAvailabilityFromDate(item.expiryDate),
+          compatibility: "95%", // Default compatibility
+          distance: 0,
+          age: Math.floor(Math.random() * 20) + 25, // Random age for demo
+          medicalStatus: "Excellent",
+          donorName: item.donorName,
+          harvestDate: item.harvestDate,
+          expiryDate: item.expiryDate,
+          temperature: item.temperature,
+          priority: item.priority,
+          notes: item.notes,
+          storageConditions: item.storageConditions,
+          transportRequirements: item.transportRequirements,
+        }))
+      setInventory(transformedDonors)
+    }
+
+    loadInventory()
+
+    // Listen for inventory updates
+    const handleStorageChange = () => {
+      loadInventory()
+    }
+
+    window.addEventListener("storage", handleStorageChange)
+    return () => window.removeEventListener("storage", handleStorageChange)
+  }, [])
+
+  // Add helper functions
+  const extractCoordinates = (location: string) => {
+    const coordMatch = location.match(/$$([0-9.-]+)°[NS],\s*([0-9.-]+)°[EW]$$/)
+    if (coordMatch) {
+      return {
+        latitude: Number.parseFloat(coordMatch[1]),
+        longitude: Number.parseFloat(coordMatch[2]),
+      }
+    }
+    // Default coordinates for Delhi if no coordinates found
+    return { latitude: 28.6139, longitude: 77.209 }
+  }
+
+  const getAvailabilityFromDate = (expiryDate: string) => {
+    const expiry = new Date(expiryDate)
+    const now = new Date()
+    const hoursLeft = (expiry.getTime() - now.getTime()) / (1000 * 60 * 60)
+
+    if (hoursLeft <= 6) return "Immediate"
+    if (hoursLeft <= 24) return "Within 1 Day"
+    if (hoursLeft <= 168) return "Within 1 Week"
+    return "Within 1 Month"
+  }
+
+  const [filteredDonors, setFilteredDonors] = useState<any[]>([])
 
   // Calculate distances when user location changes
   useEffect(() => {
     if (userLocation) {
-      const donorsWithDistance = donors.map((donor) => ({
+      const donorsWithDistance = inventory.map((donor) => ({
         ...donor,
         distance: calculateDistance(userLocation.coordinates, donor.coordinates),
       }))
       applyFilters(donorsWithDistance)
     } else {
-      applyFilters(donors)
+      applyFilters(inventory)
     }
-  }, [userLocation, filters])
+  }, [userLocation, filters, inventory])
 
   const applyFilters = (donorList: any[]) => {
     let filtered = donorList
@@ -404,20 +365,51 @@ export default function SearchPage() {
                               </div>
                             )}
                             <div>
-                              <label className="text-sm font-medium text-gray-500">Age</label>
-                              <p className="font-semibold">{donor.age} years</p>
+                              <label className="text-sm font-medium text-gray-500">Priority</label>
+                              <Badge
+                                className={
+                                  donor.priority === "critical"
+                                    ? "bg-red-500"
+                                    : donor.priority === "high"
+                                      ? "bg-orange-500"
+                                      : "bg-green-500"
+                                }
+                              >
+                                {donor.priority}
+                              </Badge>
+                            </div>
+                          </div>
+
+                          <div className="grid md:grid-cols-2 gap-4 mb-4">
+                            <div>
+                              <label className="text-sm font-medium text-gray-500">Donor Name</label>
+                              <p className="font-semibold">{donor.donorName}</p>
+                            </div>
+                            <div>
+                              <label className="text-sm font-medium text-gray-500">Storage Temperature</label>
+                              <p className="font-semibold">{donor.temperature}°C</p>
                             </div>
                           </div>
 
                           <div className="mb-4">
-                            <label className="text-sm font-medium text-gray-500">Medical Status</label>
-                            <p className="font-semibold text-green-600">{donor.medicalStatus}</p>
+                            <label className="text-sm font-medium text-gray-500">Expiry</label>
+                            <p className="font-semibold text-orange-600">
+                              {new Date(donor.expiryDate).toLocaleDateString()} at{" "}
+                              {new Date(donor.expiryDate).toLocaleTimeString()}
+                            </p>
                           </div>
 
+                          {donor.notes && (
+                            <div className="mb-4">
+                              <label className="text-sm font-medium text-gray-500">Notes</label>
+                              <p className="text-sm text-gray-600">{donor.notes}</p>
+                            </div>
+                          )}
+
                           <div className="flex gap-2">
-                            <Button className="flex-1">Contact Donor</Button>
-                            <Button variant="outline">View Full Profile</Button>
-                            <Button variant="outline">Save</Button>
+                            <Button className="flex-1">Contact Hospital</Button>
+                            <Button variant="outline">View Details</Button>
+                            <Button variant="outline">Reserve</Button>
                           </div>
                         </CardContent>
                       </Card>
