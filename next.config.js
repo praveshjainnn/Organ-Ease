@@ -4,11 +4,14 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
   images: {
-    unoptimized: true,
+    domains: ["placeholder.svg"],
+  },
+  experimental: {
+    serverActions: true,
   },
 }
 
-export default nextConfig
+module.exports = nextConfig
