@@ -449,7 +449,7 @@ export function InventoryInputForm() {
         "Temperature",
         "Notes",
       ],
-      ...filteredInventory.map((item) => [
+      ...inventory.map((item) => [
         item.organType,
         item.bloodGroup,
         item.donorName,
@@ -476,7 +476,7 @@ export function InventoryInputForm() {
 
     toast({
       title: "Export completed",
-      description: `Exported ${filteredInventory.length} items to CSV`,
+      description: `Exported ${inventory.length} items to CSV`,
     })
   }
 
@@ -501,7 +501,10 @@ export function InventoryInputForm() {
         (searchFilters.location === "" || item.location.toLowerCase().includes(searchFilters.location.toLowerCase())) &&
         (searchFilters.donorName === "" || item.donorName.toLowerCase().includes(searchFilters.donorName.toLowerCase()))
 
-      return matchesSearch && matchesFilters
+      // Apply main filter dropdown (separate from search filters)
+      const matchesMainFilter = filter === "all" || item.status === filter
+
+      return matchesSearch && matchesFilters && matchesMainFilter
     })
     .sort((a, b) => {
       let aValue = a[sortBy as keyof InventoryItem]
@@ -810,6 +813,19 @@ export function InventoryInputForm() {
                 className="pl-10"
               />
             </div>
+            <Button
+              variant="default"
+              onClick={() =>
+                toast({
+                  title: "Search executed",
+                  description: `Found ${filteredInventory.length} matching items`,
+                })
+              }
+              className="flex items-center gap-2"
+            >
+              <Search className="h-4 w-4" />
+              Search
+            </Button>
             <Button variant="outline" onClick={clearSearch}>
               Clear All
             </Button>
@@ -819,7 +835,7 @@ export function InventoryInputForm() {
           </div>
 
           {/* Advanced Filters */}
-          <div className="grid md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
             <Select
               value={searchFilters.organType || "all"}
               onValueChange={(value) =>
@@ -896,6 +912,21 @@ export function InventoryInputForm() {
                 <SelectItem value="critical">Critical</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Additional Search Inputs */}
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Input
+              placeholder="Search by location..."
+              value={searchFilters.location}
+              onChange={(e) => setSearchFilters((prev) => ({ ...prev, location: e.target.value }))}
+            />
+
+            <Input
+              placeholder="Search by donor name..."
+              value={searchFilters.donorName}
+              onChange={(e) => setSearchFilters((prev) => ({ ...prev, donorName: e.target.value }))}
+            />
 
             <Select value={sortBy} onValueChange={setSortBy}>
               <SelectTrigger>
@@ -990,7 +1021,7 @@ export function InventoryInputForm() {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <Package className="h-5 w-5" />
-                Current Inventory ({filteredInventory.length} items)
+                Current Inventory ({inventory.length} items)
               </CardTitle>
               <CardDescription>Overview of all organs currently in inventory</CardDescription>
             </div>
