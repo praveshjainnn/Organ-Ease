@@ -544,8 +544,8 @@ export function AdminDashboard() {
           {selectedItem && (
             <div className="space-y-4">
               {selectedItem.details && (
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="col-span-1 md:col-span-1">
                     <h4 className="font-medium mb-2">Contact Information</h4>
                     <div className="space-y-1 text-sm">
                       <p>
@@ -562,7 +562,7 @@ export function AdminDashboard() {
                       </p>
                     </div>
                   </div>
-                  <div>
+                  <div className="col-span-1 md:col-span-1">
                     <h4 className="font-medium mb-2">Medical Information</h4>
                     <div className="space-y-1 text-sm">
                       <p>
